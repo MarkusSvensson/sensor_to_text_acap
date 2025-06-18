@@ -1,4 +1,4 @@
-*Copyright (C) 2024, Axis Communications AB, Lund, Sweden. All Rights Reserved.*
+
 
 # ACAP application calling VAPIX APIs
 
