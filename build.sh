@@ -4,7 +4,7 @@ set -euo pipefail
 # --- Configuration ---
 # Define application name and version. These should match your manifest.json.
 APP_NAME="sensor-to-text"
-APP_VERSION="1.0.0"
+APP_VERSION="1.0.1"
 #ARCH="aarch64" # Default architecture, can be overridden by passing ARCH=armv7hf
 ARCH="armv7hf"
 
