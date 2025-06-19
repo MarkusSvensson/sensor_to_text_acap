@@ -2,7 +2,7 @@ PROG1	= sensor_to_text
 OBJS1	= sensor_to_text.c http_config.c
 PROGS	= $(PROG1)
 
-PKGS = gio-2.0 libcurl jansson
+PKGS = gio-2.0 libcurl jansson axparameter
 
 CFLAGS += $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags $(PKGS))
 LDLIBS += $(shell PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --libs $(PKGS)) -lm

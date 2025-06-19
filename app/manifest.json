@@ -7,7 +7,23 @@
             "vendor": "Markus Svensson",
             "embeddedSdkVersion": "3.0",
             "runMode": "never",
-            "version": "1.0.1"
+            "version": "1.0.2"
+        },
+        "configuration": {
+            "paramConfig": [
+                {"name": "SensorIp", "default": "0.0.0.0", "type": "string"},
+                {"name": "SensorUser", "default": "root", "type": "string"},
+                {"name": "SensorPassword","default": "pass", "type": "string"},
+                {"name": "TextDisplayIp","default": "0.0.0.0","type": "string"},
+                {"name": "TextDisplayUser","default": "root","type": "string"},
+                {"name": "TextDisplayPassword","default": "pass","type": "string"},
+                {"name": "ShowTemperature","default": "yes","type": "bool:no,yes"},
+                {"name": "ShowHumidity","default": "yes","type": "bool:no,yes"},
+                {"name": "ShowCO2","default": "yes","type": "bool:no,yes"},
+                {"name": "ShowNOx","default": "yes","type": "bool:no,yes"},
+                {"name": "SecondsBetweenCycles", "type": "int:min=0,max=3600", "default": "120"},
+                {"name": "SecondsPerData", "type": "int:min=0,max=100", "default": "5"}
+            ]
         }
     }
 }
