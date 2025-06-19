@@ -28,17 +28,16 @@ EAP_FILE=$(find ./build -name '*.eap' | head -n 1)
 
 if [ -f "$EAP_FILE" ]; then
   echo "Installing $EAP_FILE on device at $DEVICE_IP..."
-  #curl -k -u "$DEVICE_USER:$DEVICE_PASS" --digest -X POST \
-  #-F "file=@${EAP_FILE}" \
-  #"https://${DEVICE_IP}/axis-cgi/applications/install.cgi"
-  #curl -k -u root:pass \
-  #   -F "app=@./build/app/Sensor_to_Text_App_1_0_1_armv7hf.eap" \
-  #   https://192.168.68.59/axis-cgi/applications/upload.cgi
-
   curl -k --anyauth -u "$DEVICE_USER:$DEVICE_PASS" -F packfil=@${EAP_FILE} https://${DEVICE_IP}/axis-cgi/applications/upload.cgi
+
   echo "Starting $EAP_FILE on device at $DEVICE_IP..."
   curl -k --anyauth -u "$DEVICE_USER:$DEVICE_PASS" https://${DEVICE_IP}/axis-cgi/applications/control.cgi?package=sensor_to_text&action=start
+
+  echo ""
+  echo "Build and installation process completed successfully!"
+  echo ""
 else
   echo "ERROR: No .eap file found in ./build"
+  echo ""
   exit 1
 fi
