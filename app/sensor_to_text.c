@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <unistd.h>  // For sleep()
 
+static void parse_and_store_sensor_line(const char* line);
 
 __attribute__((noreturn)) __attribute__((format(printf, 1, 2))) static void
 panic(const char* format, ...) {
@@ -97,21 +98,16 @@ static size_t stream_callback(char* ptr, size_t size, size_t nmemb, void* userda
 
         g_strstrip(line);
         if (*line) {
-            json_t* obj = parse_sensor_line(line);
+            fprintf(stderr, "DEBUG: Received line: '%s'\n", line);
+            parse_and_store_sensor_line(line);
 
             pthread_mutex_lock(&shared_sensor_data.lock);
-            const char* temperature = json_string_value(json_object_get(obj, "Temperature"));
-            const char* humidity = json_string_value(json_object_get(obj, "Humidity"));
-            const char* co2 = json_string_value(json_object_get(obj, "CO2"));
-            const char* nox = json_string_value(json_object_get(obj, "NOx"));
-
-            if (temperature) snprintf(shared_sensor_data.temperature, sizeof(shared_sensor_data.temperature), "%s°C", temperature);
-            if (humidity) snprintf(shared_sensor_data.humidity, sizeof(shared_sensor_data.humidity), "%s%%", humidity);
-            if (co2) snprintf(shared_sensor_data.co2, sizeof(shared_sensor_data.co2), "%sppm", co2);
-            if (nox) snprintf(shared_sensor_data.nox, sizeof(shared_sensor_data.nox), "%sppb", nox);
+            fprintf(stderr, "DEBUG: shared_sensor_data: Temperature='%s', Humidity='%s', CO2='%s', NOx='%s'\n",
+                shared_sensor_data.temperature,
+                shared_sensor_data.humidity,
+                shared_sensor_data.co2,
+                shared_sensor_data.nox);
             pthread_mutex_unlock(&shared_sensor_data.lock);
-
-            json_decref(obj);
         }
 
         g_free(line);
@@ -169,15 +165,22 @@ static void stop_text_notification(const char* text_ip, const char* text_user, c
     curl_easy_cleanup(handle);
 }
 
-static void display_sensor_data(const char* text_ip, const char* text_user, const char* text_password, 
-                                gboolean show_temperature, gboolean show_humidity, gboolean show_co2, gboolean show_nox, 
-                                int seconds_between_cycles, int seconds_per_data) {
+void display_sensor_data(const char* text_ip, const char* text_user, const char* text_password,
+                        gboolean show_temperature, gboolean show_humidity, gboolean show_co2, gboolean show_nox,
+                        int seconds_between_cycles, int seconds_per_data) {
+    // Hardcoded display parameters
+    const char* text_color = "#FFFFFF";
+    const char* text_size = "large";
+    const char* scroll_direction = "fromRightToLeft";
+    int scroll_speed = 5;
+
     CURL* handle = curl_easy_init();
     if (!handle) {
-        panic("Failed to initialize CURL for text display");
+        fprintf(stderr, "Failed to initialize CURL for text display\n");
+        return;
     }
 
-    gchar* url = g_strdup_printf("http://%s/axis-cgi/display/text.cgi", text_ip);
+    gchar* url = g_strdup_printf("https://%s/axis-cgi/display/notification.cgi", text_ip);
     fprintf(stderr, "Connecting to text display at %s with user '%s'\n", url, text_user);
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
@@ -186,56 +189,96 @@ static void display_sensor_data(const char* text_ip, const char* text_user, cons
     curl_easy_setopt(handle, CURLOPT_PASSWORD, text_password);
     curl_easy_setopt(handle, CURLOPT_POST, 1L);
 
+    struct curl_slist *headers = NULL;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
+
     while (TRUE) {
         char display_text[128];
+        char temperature[32], humidity[32], co2[32], nox[32];
 
+        // Copy shared data under lock, then unlock before using
         pthread_mutex_lock(&shared_sensor_data.lock);
-        if (show_temperature) {
-            snprintf(display_text, sizeof(display_text), "Temperature: %s", shared_sensor_data.temperature);
-            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, display_text);
+        strncpy(temperature, shared_sensor_data.temperature, sizeof(temperature));
+        strncpy(humidity, shared_sensor_data.humidity, sizeof(humidity));
+        strncpy(co2, shared_sensor_data.co2, sizeof(co2));
+        strncpy(nox, shared_sensor_data.nox, sizeof(nox));
+        pthread_mutex_unlock(&shared_sensor_data.lock);
+
+        if (show_temperature && strcmp(temperature, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "Temperature: %s", temperature);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"seconds\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, seconds_per_data);
+
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
             CURLcode res = curl_easy_perform(handle);
             if (res != CURLE_OK) {
                 fprintf(stderr, "Failed to display temperature: %s\n", curl_easy_strerror(res));
+            } else {
+                fprintf(stderr, "Sent to display '%s'\n", display_text);
             }
             sleep(seconds_per_data);
         }
 
-        if (show_humidity) {
-            snprintf(display_text, sizeof(display_text), "Humidity: %s", shared_sensor_data.humidity);
-            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, display_text);
+        if (show_humidity && strcmp(humidity, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "Humidity: %s", humidity);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"seconds\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, seconds_per_data);
+
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
             CURLcode res = curl_easy_perform(handle);
             if (res != CURLE_OK) {
                 fprintf(stderr, "Failed to display humidity: %s\n", curl_easy_strerror(res));
+            } else {
+                fprintf(stderr, "Sent to display '%s'\n", display_text);
             }
             sleep(seconds_per_data);
         }
 
-        if (show_co2) {
-            snprintf(display_text, sizeof(display_text), "CO2: %s", shared_sensor_data.co2);
-            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, display_text);
+        if (show_co2 && strcmp(co2, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "CO2: %s", co2);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"seconds\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, seconds_per_data);
+
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
             CURLcode res = curl_easy_perform(handle);
             if (res != CURLE_OK) {
                 fprintf(stderr, "Failed to display CO2: %s\n", curl_easy_strerror(res));
+            } else {
+                fprintf(stderr, "Sent to display '%s'\n", display_text);
             }
             sleep(seconds_per_data);
         }
 
-        if (show_nox) {
-            snprintf(display_text, sizeof(display_text), "NOx: %s", shared_sensor_data.nox);
-            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, display_text);
+        if (show_nox && strcmp(nox, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "NOx: %s", nox);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"seconds\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, seconds_per_data);
+
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
             CURLcode res = curl_easy_perform(handle);
             if (res != CURLE_OK) {
                 fprintf(stderr, "Failed to display NOx: %s\n", curl_easy_strerror(res));
+            } else {
+                fprintf(stderr, "Sent to display '%s'\n", display_text);
             }
             sleep(seconds_per_data);
         }
-        pthread_mutex_unlock(&shared_sensor_data.lock);
 
         stop_text_notification(text_ip, text_user, text_password);
         sleep(seconds_between_cycles);
     }
 
     g_free(url);
+    curl_slist_free_all(headers);
     curl_easy_cleanup(handle);
 }
 
@@ -254,12 +297,45 @@ typedef struct {
 
 void* display_sensor_data_thread(void* args) {
     DisplayParams* params = (DisplayParams*)args;
+    sleep(2);  // Allow main thread to initialize and hopefully start receiving data
 
     display_sensor_data(params->text_ip, params->text_user, params->text_password,
                         params->show_temperature, params->show_humidity, params->show_co2, params->show_nox,
                         params->seconds_between_cycles, params->seconds_per_data);
 
     return NULL;
+}
+
+static void parse_and_store_sensor_line(const char* line) {
+    char key[32], value[32];
+    char *copy = g_strdup(line);
+    char *token = strtok(copy, ",");
+
+    pthread_mutex_lock(&shared_sensor_data.lock);
+
+    // Only update if found, otherwise keep previous value
+    while (token) {
+        char *eq = strchr(token, '=');
+        if (eq) {
+            *eq = '\0';
+            char *k = g_strstrip(token);
+            char *v = g_strstrip(eq + 1);
+
+            if (strcmp(k, "Temperature") == 0) {
+                snprintf(shared_sensor_data.temperature, sizeof(shared_sensor_data.temperature), "%s°C", v);
+            } else if (strcmp(k, "Humidity") == 0) {
+                snprintf(shared_sensor_data.humidity, sizeof(shared_sensor_data.humidity), "%s%%", v);
+            } else if (strcmp(k, "CO2") == 0) {
+                snprintf(shared_sensor_data.co2, sizeof(shared_sensor_data.co2), "%sppm", v);
+            } else if (strcmp(k, "NOx") == 0) {
+                snprintf(shared_sensor_data.nox, sizeof(shared_sensor_data.nox), "%sppb", v);
+            }
+        }
+        token = strtok(NULL, ",");
+    }
+
+    pthread_mutex_unlock(&shared_sensor_data.lock);
+    g_free(copy);
 }
 
 int main(void) {
@@ -272,21 +348,21 @@ int main(void) {
     if (axp_handle == NULL)
         panic("%s", error->message);
 
-    char* sensor_ip = get_string_parameter(axp_handle, "Sensor_Ip", &error);
-    char* sensor_user = get_string_parameter(axp_handle, "Sensor_User", &error);
-    char* sensor_password = get_string_parameter(axp_handle, "Sensor_Password", &error);
+    char* sensor_ip = get_string_parameter(axp_handle, "SensorIp", &error);
+    char* sensor_user = get_string_parameter(axp_handle, "SensorUser", &error);
+    char* sensor_password = get_string_parameter(axp_handle, "SensorPassword", &error);
 
-    char* text_ip = get_string_parameter(axp_handle, "Text_Display_Ip", &error);
-    char* text_user = get_string_parameter(axp_handle, "Text_Display_User", &error);
-    char* text_password = get_string_parameter(axp_handle, "Text_Display_Password", &error);
+    char* text_ip = get_string_parameter(axp_handle, "TextDisplayIp", &error);
+    char* text_user = get_string_parameter(axp_handle, "TextDisplayUser", &error);
+    char* text_password = get_string_parameter(axp_handle, "TextDisplayPassword", &error);
 
-    gboolean show_temperature = get_boolean_parameter(axp_handle, "Show_Temperature", &error);
-    gboolean show_humidity = get_boolean_parameter(axp_handle, "Show_Humidity", &error);
-    gboolean show_co2 = get_boolean_parameter(axp_handle, "Show_CO2", &error);
-    gboolean show_nox = get_boolean_parameter(axp_handle, "Show_NOx", &error);
+    gboolean show_temperature = get_boolean_parameter(axp_handle, "ShowTemperature", &error);
+    gboolean show_humidity = get_boolean_parameter(axp_handle, "ShowHumidity", &error);
+    gboolean show_co2 = get_boolean_parameter(axp_handle, "ShowCO2", &error);
+    gboolean show_nox = get_boolean_parameter(axp_handle, "ShowNOx", &error);
 
-    int seconds_between_cycles = get_integer_parameter(axp_handle, "Seconds_Between_Cycles", &error);
-    int seconds_per_data = get_integer_parameter(axp_handle, "Seconds_Per_Data", &error);
+    int seconds_between_cycles = get_integer_parameter(axp_handle, "SecondsBetweenCycles", &error);
+    int seconds_per_data = get_integer_parameter(axp_handle, "SecondsPerData", &error);
 
     // Prepare parameters for the display thread
     DisplayParams params = {

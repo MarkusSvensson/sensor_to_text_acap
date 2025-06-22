@@ -1,5 +1,5 @@
 PROG1	= sensor_to_text
-OBJS1	= sensor_to_text.c http_config.c
+OBJS1	= sensor_to_text.c
 PROGS	= $(PROG1)
 
 PKGS = gio-2.0 libcurl jansson axparameter

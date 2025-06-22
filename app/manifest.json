@@ -11,18 +11,18 @@
         },
         "configuration": {
             "paramConfig": [
-                {"name": "Sensor_Ip", "default": "0.0.0.0", "type": "string"},
-                {"name": "Sensor_User", "default": "root", "type": "string"},
-                {"name": "Sensor_Password","default": "pass", "type": "string"},
-                {"name": "Text_Display_Ip","default": "0.0.0.0","type": "string"},
-                {"name": "Text_Display_User","default": "root","type": "string"},
-                {"name": "Text_Display_Password","default": "pass","type": "string"},
-                {"name": "Show_Temperature","default": "yes","type": "bool:no,yes"},
-                {"name": "Show_Humidity","default": "yes","type": "bool:no,yes"},
-                {"name": "Show_CO2","default": "yes","type": "bool:no,yes"},
-                {"name": "Show_NOx","default": "yes","type": "bool:no,yes"},
-                {"name": "Seconds_Between_Cycles", "type": "int:min=0,max=3600", "default": "120"},
-                {"name": "Seconds_Per_Data", "type": "int:min=0,max=100", "default": "5"}
+                {"name": "SensorIp", "default": "0.0.0.0", "type": "string"},
+                {"name": "SensorUser", "default": "root", "type": "string"},
+                {"name": "SensorPassword","default": "pass", "type": "string"},
+                {"name": "TextDisplayIp","default": "0.0.0.0","type": "string"},
+                {"name": "TextDisplayUser","default": "root","type": "string"},
+                {"name": "TextDisplayPassword","default": "pass","type": "string"},
+                {"name": "ShowTemperature","default": "yes","type": "bool:no,yes"},
+                {"name": "ShowHumidity","default": "yes","type": "bool:no,yes"},
+                {"name": "ShowCO2","default": "yes","type": "bool:no,yes"},
+                {"name": "ShowNOx","default": "yes","type": "bool:no,yes"},
+                {"name": "SecondsBetweenCycles", "type": "int:min=0,max=3600", "default": "120"},
+                {"name": "SecondsPerData", "type": "int:min=0,max=100", "default": "5"}
             ]
         }
     }
