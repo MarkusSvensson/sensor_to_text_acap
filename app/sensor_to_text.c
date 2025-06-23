@@ -172,26 +172,29 @@ int main(void) {
         panic("Failed to initialize CURL");
 
     GString* stream_buffer = g_string_new(NULL);
-    gchar* url = g_strdup_printf("http://%s/axis-cgi/airquality/metadata.cgi", sensor_ip);
+    gchar* url = g_strdup_printf("https://%s/axis-cgi/airquality/metadata.cgi", sensor_ip);
 
-    fprintf(stderr, "Connecting to %s with user '%s'\n", url, sensor_user);
+    fprintf(stderr, "Connecting to %s with user '%s:'%s'\n", url, sensor_user, sensor_password);
 
     curl_easy_setopt(handle, CURLOPT_URL, url);
-    curl_easy_setopt(handle, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+    curl_easy_setopt(handle, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
     curl_easy_setopt(handle, CURLOPT_USERNAME, sensor_user);
     curl_easy_setopt(handle, CURLOPT_PASSWORD, sensor_password);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, stream_callback);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, stream_buffer);
     curl_easy_setopt(handle, CURLOPT_TIMEOUT, 0L);  // No timeout
     curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, 5L);
+    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+
 
     CURLcode res = curl_easy_perform(handle);
     if (res != CURLE_OK)
-        panic("CURL error %d: %s", res, curl_easy_strerror(res));
+        panic("CURL error (when connecting to sensor) %d: %s", res, curl_easy_strerror(res));
 
     long response_code = 0;
     curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &response_code);
-    fprintf(stderr, "HTTP response code: %ld\n", response_code);
+    fprintf(stderr, "HTTP response code (when connecting to sensor): %ld\n", response_code);
 
     curl_easy_cleanup(handle);
     curl_global_cleanup();
