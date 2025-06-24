@@ -54,7 +54,7 @@ void* textdisplay_run(void* args) {
 
     while (1) {
         char display_text[128];
-        char temperature[32], humidity[32], co2[32], nox[32];
+        char temperature[32], humidity[32], co2[32], nox[32], pm10[32], pm25[32], pm40[32], pm100[32], vap[32], voc[32], aqi[32];
 
         // Copy shared data under lock, then unlock before using
         pthread_mutex_lock(&params->shared_sensor_data->lock);
@@ -62,15 +62,22 @@ void* textdisplay_run(void* args) {
         strncpy(humidity, params->shared_sensor_data->humidity, sizeof(humidity));
         strncpy(co2, params->shared_sensor_data->co2, sizeof(co2));
         strncpy(nox, params->shared_sensor_data->nox, sizeof(nox));
+        strncpy(pm10, params->shared_sensor_data->pm10, sizeof(pm10));
+        strncpy(pm25, params->shared_sensor_data->pm25, sizeof(pm25));
+        strncpy(pm40, params->shared_sensor_data->pm40, sizeof(pm40));
+        strncpy(pm100, params->shared_sensor_data->pm100, sizeof(pm100));
+        strncpy(vap, params->shared_sensor_data->vap, sizeof(vap));
+        strncpy(voc, params->shared_sensor_data->voc, sizeof(voc));
+        strncpy(aqi, params->shared_sensor_data->aqi, sizeof(aqi));
         pthread_mutex_unlock(&params->shared_sensor_data->lock);
         //fprintf(stderr, "DEBUG: Using values from shared_sensor_data: Temperature='%s', Humidity='%s', CO2='%s', NOx='%s'\n", temperature, humidity, co2, nox);
 
         if (params->show_temperature && strcmp(temperature, "N/A") != 0) {
-            snprintf(display_text, sizeof(display_text), "Temperature: %s", temperature);
+            snprintf(display_text, sizeof(display_text), "Temperature\\r%s", temperature);
             char json_payload[512];
             snprintf(json_payload, sizeof(json_payload),
                 "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
-                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data);
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
             fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
             CURLcode res = curl_easy_perform(handle);
@@ -79,11 +86,11 @@ void* textdisplay_run(void* args) {
         }
 
         if (params->show_humidity && strcmp(humidity, "N/A") != 0) {
-            snprintf(display_text, sizeof(display_text), "Humidity: %s", humidity);
+            snprintf(display_text, sizeof(display_text), "Humidity\\r%s", humidity);
             char json_payload[512];
             snprintf(json_payload, sizeof(json_payload),
                 "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
-                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data);
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
             fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
             CURLcode res = curl_easy_perform(handle);
@@ -92,11 +99,11 @@ void* textdisplay_run(void* args) {
         }
 
         if (params->show_co2 && strcmp(co2, "N/A") != 0) {
-            snprintf(display_text, sizeof(display_text), "CO2: %s", co2);
+            snprintf(display_text, sizeof(display_text), "Carbon Dioxide (CO₂)\\r%s", co2);
             char json_payload[512];
             snprintf(json_payload, sizeof(json_payload),
                 "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
-                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data);
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
             fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
             CURLcode res = curl_easy_perform(handle);
@@ -105,11 +112,102 @@ void* textdisplay_run(void* args) {
         }
 
         if (params->show_nox && strcmp(nox, "N/A") != 0) {
-            snprintf(display_text, sizeof(display_text), "NOx: %s", nox);
+            snprintf(display_text, sizeof(display_text), "NOx\\r%s", nox);
             char json_payload[512];
             snprintf(json_payload, sizeof(json_payload),
                 "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
-                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data);
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
+            fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
+            CURLcode res = curl_easy_perform(handle);
+            if (res != CURLE_OK) {fprintf(stderr, "CURL error (when connecting to text display) %d: %s", res, curl_easy_strerror(res));} 
+            sleep(params->seconds_per_data);
+        }
+
+        if (params->show_pm10 && strcmp(pm10, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "PM 1.0\\r%s", pm10);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
+            fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
+            CURLcode res = curl_easy_perform(handle);
+            if (res != CURLE_OK) {fprintf(stderr, "CURL error (when connecting to text display) %d: %s", res, curl_easy_strerror(res));} 
+            sleep(params->seconds_per_data);
+        }
+
+         if (params->show_pm25 && strcmp(pm25, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "PM 2.5\\r%s", pm25);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
+            fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
+            CURLcode res = curl_easy_perform(handle);
+            if (res != CURLE_OK) {fprintf(stderr, "CURL error (when connecting to text display) %d: %s", res, curl_easy_strerror(res));} 
+            sleep(params->seconds_per_data);
+        }
+
+        if (params->show_pm40 && strcmp(pm40, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "PM 4.0\\r%s", pm40);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
+            fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
+            CURLcode res = curl_easy_perform(handle);
+            if (res != CURLE_OK) {fprintf(stderr, "CURL error (when connecting to text display) %d: %s", res, curl_easy_strerror(res));} 
+            sleep(params->seconds_per_data);
+        }
+
+        if (params->show_pm100 && strcmp(pm100, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "PM 10.0\\r%s", pm100);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
+            fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
+            CURLcode res = curl_easy_perform(handle);
+            if (res != CURLE_OK) {fprintf(stderr, "CURL error (when connecting to text display) %d: %s", res, curl_easy_strerror(res));} 
+            sleep(params->seconds_per_data);
+        }
+
+        if (params->show_vap && strcmp(vap, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "Vaping/smoking\\r%s", vap);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
+            fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
+            CURLcode res = curl_easy_perform(handle);
+            if (res != CURLE_OK) {fprintf(stderr, "CURL error (when connecting to text display) %d: %s", res, curl_easy_strerror(res));} 
+            sleep(params->seconds_per_data);
+        }
+
+        if (params->show_voc && strcmp(voc, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "VOC\\r%s", voc);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
+            fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
+            curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
+            CURLcode res = curl_easy_perform(handle);
+            if (res != CURLE_OK) {fprintf(stderr, "CURL error (when connecting to text display) %d: %s", res, curl_easy_strerror(res));} 
+            sleep(params->seconds_per_data);
+        }
+
+        if (params->show_aqi && strcmp(aqi, "N/A") != 0) {
+            snprintf(display_text, sizeof(display_text), "Air Quality Index (AQI)\\r%s", aqi);
+            char json_payload[512];
+            snprintf(json_payload, sizeof(json_payload),
+                "{ \"data\": { \"message\": \"%s\", \"textColor\": \"%s\", \"textSize\": \"%s\", \"scrollDirection\": \"%s\", \"scrollSpeed\": %d, \"duration\": { \"type\": \"time\", \"value\": %d } } }",
+                display_text, text_color, text_size, scroll_direction, scroll_speed, params->seconds_per_data * 1100);
             fprintf(stderr, "DEBUG: Sending JSON to display (%s): %s\n", url, json_payload);
             curl_easy_setopt(handle, CURLOPT_POSTFIELDS, json_payload);
             CURLcode res = curl_easy_perform(handle);

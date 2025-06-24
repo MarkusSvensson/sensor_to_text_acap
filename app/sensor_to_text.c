@@ -30,7 +30,14 @@ static SensorData shared_sensor_data = {
     .temperature = "N/A",
     .humidity = "N/A",
     .co2 = "N/A",
-    .nox = "N/A"
+    .nox = "N/A",
+    .pm10 = "N/A",
+    .pm25 = "N/A",
+    .pm40 = "N/A",
+    .pm100 = "N/A",
+    .vap = "N/A",
+    .voc = "N/A",
+    .aqi = "N/A"
 };
 
 static size_t stream_callback(char* ptr, size_t size, size_t nmemb, void* userdata) {
@@ -57,7 +64,14 @@ static size_t stream_callback(char* ptr, size_t size, size_t nmemb, void* userda
                 shared_sensor_data.temperature,
                 shared_sensor_data.humidity,
                 shared_sensor_data.co2,
-                shared_sensor_data.nox);
+                shared_sensor_data.nox,
+                shared_sensor_data.pm10,
+                shared_sensor_data.pm25,
+                shared_sensor_data.pm40,
+                shared_sensor_data.pm100,
+                shared_sensor_data.vap,
+                shared_sensor_data.voc,
+                shared_sensor_data.aqi);
             pthread_mutex_unlock(&shared_sensor_data.lock);
         }
 
@@ -102,14 +116,33 @@ static void parse_and_store_sensor_line(const char* line) {
             char *k = g_strstrip(token);
             char *v = g_strstrip(eq + 1);
 
+            // PM1.0 = 0.1, PM2.5 = 0.3, PM4.0 = 0.4, PM10.0 = 0.5, Temperature = 22.8, Humidity = 37.0, VOC = 52, NOx = 1, CO2 = 604, AQI = 3, Vaping = 0
             if (strcmp(k, "Temperature") == 0) {
                 snprintf(shared_sensor_data.temperature, sizeof(shared_sensor_data.temperature), "%s°C", v);
             } else if (strcmp(k, "Humidity") == 0) {
-                snprintf(shared_sensor_data.humidity, sizeof(shared_sensor_data.humidity), "%s%%", v);
+                snprintf(shared_sensor_data.humidity, sizeof(shared_sensor_data.humidity), "%s%% RH", v);
             } else if (strcmp(k, "CO2") == 0) {
-                snprintf(shared_sensor_data.co2, sizeof(shared_sensor_data.co2), "%sppm", v);
+                snprintf(shared_sensor_data.co2, sizeof(shared_sensor_data.co2), "%s ppm", v);
             } else if (strcmp(k, "NOx") == 0) {
-                snprintf(shared_sensor_data.nox, sizeof(shared_sensor_data.nox), "%sppb", v);
+                snprintf(shared_sensor_data.nox, sizeof(shared_sensor_data.nox), "%s", v);
+            } else if (strcmp(k, "PM1.0") == 0) {
+                snprintf(shared_sensor_data.pm10, sizeof(shared_sensor_data.pm10), "%s µg/m³", v);
+            } else if (strcmp(k, "PM2.5") == 0) {
+                snprintf(shared_sensor_data.pm25, sizeof(shared_sensor_data.pm25), "%s µg/m³", v);
+            } else if (strcmp(k, "PM4.0") == 0) {
+                snprintf(shared_sensor_data.pm40, sizeof(shared_sensor_data.pm40), "%s µg/m³", v);
+            } else if (strcmp(k, "PM10.0") == 0) {
+                snprintf(shared_sensor_data.pm100, sizeof(shared_sensor_data.pm100), "%s µg/m³", v);
+            } else if (strcmp(k, "Vaping") == 0) {
+                if (strcmp(v, "0") == 0) {
+                    snprintf(shared_sensor_data.vap, sizeof(shared_sensor_data.vap), "%s", "No");
+                } else {
+                    snprintf(shared_sensor_data.vap, sizeof(shared_sensor_data.vap), "%s", "Yes");
+                }
+            } else if (strcmp(k, "VOC") == 0) {
+                snprintf(shared_sensor_data.voc, sizeof(shared_sensor_data.voc), "%s", v);
+            } else if (strcmp(k, "AQI") == 0) {
+                snprintf(shared_sensor_data.aqi, sizeof(shared_sensor_data.aqi), "%s", v);
             }
         }
         token = strtok(NULL, ",");
@@ -140,7 +173,14 @@ int main(void) {
     gboolean show_temperature = get_boolean_parameter(axp_handle, "ShowTemperature", &error);
     gboolean show_humidity = get_boolean_parameter(axp_handle, "ShowHumidity", &error);
     gboolean show_co2 = get_boolean_parameter(axp_handle, "ShowCO2", &error);
-    gboolean show_nox = get_boolean_parameter(axp_handle, "ShowNOx", &error);
+    gboolean show_nox = get_boolean_parameter(axp_handle, "ShowNOX", &error);
+    gboolean show_pm10 = get_boolean_parameter(axp_handle, "ShowPM10", &error);
+    gboolean show_pm25 = get_boolean_parameter(axp_handle, "ShowPM25", &error);
+    gboolean show_pm40 = get_boolean_parameter(axp_handle, "ShowPM40", &error);
+    gboolean show_pm100 = get_boolean_parameter(axp_handle, "ShowPM100", &error);
+    gboolean show_vap = get_boolean_parameter(axp_handle, "ShowVapingSmoking", &error);
+    gboolean show_voc = get_boolean_parameter(axp_handle, "ShowVOC", &error);
+    gboolean show_aqi = get_boolean_parameter(axp_handle, "ShowAQI", &error);
 
     int seconds_between_cycles = get_integer_parameter(axp_handle, "SecondsBetweenCycles", &error);
     int seconds_per_data = get_integer_parameter(axp_handle, "SecondsPerData", &error);
@@ -154,6 +194,13 @@ int main(void) {
         .show_humidity = show_humidity,
         .show_co2 = show_co2,
         .show_nox = show_nox,
+        .show_pm10 = show_pm10,
+        .show_pm25 = show_pm25,
+        .show_pm40 = show_pm40,
+        .show_pm100 = show_pm100,
+        .show_vap = show_vap,
+        .show_voc = show_voc,
+        .show_aqi = show_aqi,
         .seconds_between_cycles = seconds_between_cycles,
         .seconds_per_data = seconds_per_data,
         .shared_sensor_data = &shared_sensor_data
