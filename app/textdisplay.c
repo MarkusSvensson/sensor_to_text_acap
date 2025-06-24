@@ -4,6 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 
+void stop_text_notification(const char* text_ip, const char* text_user, const char* text_password);
+
 // Helper function to send a value to the display
 static void send_display_value(
     CURL* handle,

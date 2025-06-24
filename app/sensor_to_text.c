@@ -60,7 +60,7 @@ static size_t stream_callback(char* ptr, size_t size, size_t nmemb, void* userda
             parse_and_store_sensor_line(line);
 
             pthread_mutex_lock(&shared_sensor_data.lock);
-            fprintf(stderr, "DEBUG: shared_sensor_data: Temperature='%s', Humidity='%s', CO2='%s', NOx='%s'\n",
+            fprintf(stderr, "DEBUG: shared_sensor_data: Temperature='%s', Humidity='%s', CO2='%s', NOx='%s', PM1.0='%s', PM2.5='%s', PM4.0='%s', PM10.0='%s', Vaping='%s', VOC='%s', AQI='%s'\n",
                 shared_sensor_data.temperature,
                 shared_sensor_data.humidity,
                 shared_sensor_data.co2,
