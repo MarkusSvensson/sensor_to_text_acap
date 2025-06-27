@@ -82,6 +82,8 @@ void* textdisplay_run(void* args) {
     headers = curl_slist_append(headers, "Content-Type: application/json");
     curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
 
+    sleep(3); // Wait a few seconds for sensor data to be read
+
     while (1) {
         char temperature[32], humidity[32], co2[32], nox[32], pm10[32], pm25[32], pm40[32], pm100[32], vap[32], voc[32], aqi[32];
 
@@ -116,7 +118,7 @@ void* textdisplay_run(void* args) {
 
         stop_text_notification(params->text_ip, params->text_user, params->text_password);
         if (strcmp(temperature, "N/A") == 0){
-            sleep(5); // Wait for 5 seconds if no data is available
+            send_display_value(handle, url, "No data from sensor", "Check settings & restart", duration, 1);
         } else {
             sleep(params->seconds_between_cycles);
         }

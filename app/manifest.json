@@ -3,7 +3,7 @@
     "acapPackageConf": {
         "setup": {
             "appName": "sensor_to_text",
-            "friendlyName": "Sensor to Text App",
+            "friendlyName": "Air quality data to display",
             "vendor": "Markus Svensson",
             "embeddedSdkVersion": "3.0",
             "runMode": "never",

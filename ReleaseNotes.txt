@@ -1,0 +1,24 @@
+Getting started
+========================
+1. Install ACAP on a text display AXIS C1710 or C1720. Make sure to "Allow unsigned apps".
+2. Configure ACAP by pressing "..." and Settings.
+   2a. The ACAP will show the sensor data in a cycle. Set the time between cycles (when the clock will show). Set the time each sensor data (for example temperature) should be shown
+   2b. Set the ip, user, and password for the environment sensor.
+   2c. Select which sensor data to cycle through
+   2d. Set the ip, user and password for the text display device.
+3. Start the ACAP.
+
+NOTE 1: You need to restart the ACAP for setting changes to take effect.
+NOTE 2: This is not an official AXIS ACAP. For demo purpose only. It is not signed. It is not secure. No guarantees, use at your own discretion.
+NOTE 3: The ACAP is tested using AXIS C1720 Network Display and AXIS D6310 Air Quality Sensor
+
+-------------------------------------------------------
+
+Version 1.0.4
+========================
+- First release
+
+
+Contact:
+========================
+markus.svensson@axis.com
