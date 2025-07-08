@@ -17,8 +17,3 @@ NOTE 3: The ACAP is tested using AXIS C1720 Network Display and AXIS D6310 Air Q
 Version 1.0.4
 ========================
 - First release
-
-
-Contact:
-========================
-markus.svensson@axis.com
